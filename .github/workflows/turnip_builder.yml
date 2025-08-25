@@ -2,8 +2,6 @@ name: Build "turnip"
 
 on:
   workflow_dispatch:
-  schedule:
-  - cron: "20 5 1,15 * *"
 
 jobs:
   start_building_turnip:
@@ -32,9 +30,8 @@ jobs:
     - name: Release "turnip"
       uses: softprops/action-gh-release@v1
       with:
-        body: Turnip magisk module and driver package for adrenotools
+        body: Turnip Vulkan driver library
         tag_name: github_run
-        name: Weekly Action Release
+        name: Action Release
         files: |
-           turnip_workdir/turnip.zip
-           turnip_workdir/turnip_adrenotools.zip
+           turnip_workdir/mesa-main/build-android-aarch64/src/freedreno/vulkan/libvulkan_freedreno.so

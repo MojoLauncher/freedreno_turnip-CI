@@ -20,8 +20,6 @@ run_all(){
 	check_deps
 	prepare_workdir
 	build_lib_for_android
-	port_lib_for_magisk
-	port_lib_for_adrenotools
 }
 
 check_deps(){
@@ -130,91 +128,6 @@ EOF
 
 	if ! [ -a "$workdir"/mesa-main/build-android-aarch64/src/freedreno/vulkan/libvulkan_freedreno.so ]; then
 		echo -e "$red Build failed! $nocolor" && exit 1
-	fi
-}
-
-port_lib_for_magisk(){
-	echo "Using patchelf to match soname ..." $'\n'
-		cp "$workdir"/mesa-main/build-android-aarch64/src/freedreno/vulkan/libvulkan_freedreno.so "$workdir"
-		cd "$workdir"
-		patchelf --set-soname vulkan.adreno.so libvulkan_freedreno.so
-		mv libvulkan_freedreno.so vulkan.adreno.so
-
-	echo "Prepare magisk module structure ..." $'\n'
-		p1="system/vendor/lib64/hw"
-		mkdir -p "$magiskdir" && cd "$_"
-		mkdir -p "$p1"
-
-		meta="META-INF/com/google/android"
-		mkdir -p "$meta"
-
-		cat <<EOF >"$meta/update-binary"
-#################
-# Initialization
-#################
-umask 022
-ui_print() { echo "\$1"; }
-OUTFD=\$2
-ZIPFILE=\$3
-. /data/adb/magisk/util_functions.sh
-install_module
-exit 0
-EOF
-
-		cat <<EOF >"$meta/updater-script"
-#MAGISK
-EOF
-
-		cat <<EOF >"module.prop"
-id=turnip
-name=turnip
-version=$(cat $workdir/mesa-main/VERSION)
-versionCode=1
-author=MrMiy4mo
-description=Turnip is an open-source vulkan driver for devices with adreno GPUs.
-EOF
-
-		cat <<EOF >"customize.sh"
-set_perm_recursive $MODPATH/system 0 0 0755 0644
-set_perm $MODPATH/system/vendor/lib64/hw/vulkan.adreno.so 0 0 0644
-EOF
-
-	echo "Copy necessary files from work directory ..." $'\n'
-		cp "$workdir"/vulkan.adreno.so "$magiskdir"/"$p1"
-
-	echo "Packing files in to magisk module ..." $'\n'
-		zip -r "$workdir"/turnip.zip ./* &> /dev/null
-		if ! [ -a "$workdir"/turnip.zip ];
-			then echo -e "$red-Packing failed!$nocolor" && exit 1
-			else echo -e "$green-All done, the module saved to;$nocolor" && echo "$workdir"/turnip.zip
-		fi
-}
-
-port_lib_for_adrenotools(){
-	libname=vulkan.freedreno.so
-	echo "Using patchelf to match soname" $'\n'
-		cp "$workdir"/mesa-main/build-android-aarch64/src/freedreno/vulkan/libvulkan_freedreno.so "$workdir"/$libname
-		cd "$workdir"
-		patchelf --set-soname $libname $libname
-	echo "Preparing meta.json" $'\n'
-		cat <<EOF > "meta.json"
-{
-	"schemaVersion": 1,
-	"name": "freedreno_turnip-CI",
-	"description": "$(date)",
-	"author": "MrMiy4mo, kethen",
-	"packageVersion": "1",
-	"vendor": "Mesa",
-	"driverVersion": "$(cat $workdir/mesa-main/VERSION)",
-	"minApi": $sdkver,
-	"libraryName": "$libname"
-}
-EOF
-
-	zip -9 "$workdir"/turnip_adrenotools.zip $libname meta.json &> /dev/null
-	if ! [ -a "$workdir"/turnip_adrenotools.zip ];
-		then echo -e "$red-Packing turnip_adrenotools.zip failed!$nocolor" && exit 1
-		else echo -e "$green-All done, the module saved to;$nocolor" && echo "$workdir"/turnip_adrenotools.zip
 	fi
 }
 
