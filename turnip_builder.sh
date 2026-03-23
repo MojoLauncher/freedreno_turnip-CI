@@ -58,6 +58,10 @@ prepare_workdir(){
 	echo "Exracting mesa source ..." $'\n'
 		unzip mesa-main.zip &> /dev/null
 		cd mesa-$srcfolder
+	echo "Downloading patchset ..." $'\n'
+		curl -L https://github.com/whitebelyash/mesa-tu8/releases/download/patchset-head-v2/tu8_kgsl_26.patch --output a8xx.patch &> /dev/null
+	echo "Applying patchset ..." $'\n'
+    		patch -p1 < a8xx.patch
 }
 
 
@@ -113,8 +117,6 @@ EOF
 			--native-file "native.txt" \
 			--prefix /tmp/turnip \
 			-Dbuildtype=release \
-			-Db_lto=true \
-   			-Db_lto_mode=thin \
 			-Dstrip=true \
 			-Dplatforms=android \
 			-Dvideo-codecs= \
